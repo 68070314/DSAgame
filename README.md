@@ -1,2 +1,6 @@
-# DSAgame
-DSA game project for Physical Programming
+## Physical Computing Project 2026 - IT KMITL
+
+# Members:
+1. 68070321 สุวรรณภูมิ พุ่มแสวง
+2. 68070205 อัยยรัช มาลารัตน์
+3. 68070314 ศักรินทร์ กำแหงพล
