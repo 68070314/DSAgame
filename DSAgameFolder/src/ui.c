@@ -2,15 +2,24 @@
 #include "raylib.h"
 
 #define TILE 48
-#define OFFSET_X 40
-#define OFFSET_Y 40
+#define SCREEN_W 800
+#define AREA_TOP 50
+#define AREA_BOTTOM 470
 
 void ui_draw(const Level *lv) {
+    int map_w = lv->width * TILE;
+    int map_h = lv->height * TILE;
+
+    int ox = (SCREEN_W - map_w) / 2;
+    int oy = AREA_TOP + (AREA_BOTTOM - AREA_TOP - map_h) / 2;
+    if (ox < 0) ox = 0;
+    if (oy < AREA_TOP) oy = AREA_TOP;
+
     for (int y = 0; y < lv->height; y++) {
         for (int x = 0; x < lv->width; x++) {
             char c = lv->grid[y][x];
-            int px = OFFSET_X + x * TILE;
-            int py = OFFSET_Y + y * TILE;
+            int px = ox + x * TILE;
+            int py = oy + y * TILE;
 
             if (c == '#') {
                 DrawRectangle(px, py, TILE, TILE, DARKGRAY);
@@ -28,7 +37,8 @@ void ui_draw(const Level *lv) {
                 DrawCircle(px + TILE / 2, py + TILE / 2, TILE / 3, BLUE);
         }
     }
-    DrawText(TextFormat("Moves: %d", lv->moves), OFFSET_X, 8, 24, DARKGRAY);
-    DrawText("Arrows/WASD: move   R: restart", OFFSET_X,
-             OFFSET_Y + lv->height * TILE + 12, 20, GRAY);
+
+    // move counter above the map, hint below it, both lined up with the map
+    DrawText(TextFormat("Moves: %d", lv->moves), ox, oy - 30, 24, DARKGRAY);
+    DrawText("Arrows/WASD: move   R: restart", ox, oy + map_h + 12, 20, GRAY);
 }
