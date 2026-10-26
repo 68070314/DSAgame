@@ -1,0 +1,1 @@
+  -L"D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2/lib"  -lraylib -lopengl32 -lgdi32 -lwinmm -lshell32 -lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 
