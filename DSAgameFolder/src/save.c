@@ -1,10 +1,8 @@
-#include "save.h"
 #include <stdio.h>
+#include "save.h"
 
-#define SAVE_PATH "save.txt"
-
-int save_load(int num_levels) {
-    FILE *f = fopen(SAVE_PATH, "r");
+int save_load(const char *path, int num_levels) {
+    FILE *f = fopen(path, "r");
     if (!f) return 0;                       // first run: no save yet
 
     int v = 0;
@@ -16,10 +14,11 @@ int save_load(int num_levels) {
     return v;
 }
 
-bool save_write(int unlocked) {
-    FILE *f = fopen(SAVE_PATH, "w");
+bool save_write(const char *path, int unlocked) {
+    FILE *f = fopen(path, "w");
     if (!f) return false;
-    fprintf(f, "%d\n", unlocked);
-    fclose(f);
-    return true;
+
+    bool ok = fprintf(f, "%d\n", unlocked) > 0;
+    if (fclose(f) != 0) ok = false;         // fclose flushes the data to disk
+    return ok;
 }

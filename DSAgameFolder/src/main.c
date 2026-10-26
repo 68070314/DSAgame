@@ -41,16 +41,23 @@ static void read_port_name(char *out, size_t size) {
     fclose(f);
 }
 
-// Returns at most one command per frame: the Arduino first, then the keyboard.
-// Extra bytes stay in the serial buffer and are handled on the next frames.
+// Builds the full path of save.txt inside the folder that contains the .exe, so
+// the save file is the same no matter which folder the game was started from.
+static void build_save_path(char *out, size_t size) {
+    const char *dir = GetApplicationDirectory();    // normally ends with a slash
+    size_t n = strlen(dir);
+    const char *sep = (n > 0 && (dir[n - 1] == '/' || dir[n - 1] == '\\')) ? "" : "/";
+    snprintf(out, size, "%s%ssave.txt", dir, sep);
+}
+
 static Command poll_command(void) {
     int c;
     while ((c = serial_read_key()) != -1) {
         Command cmd = input_from_key(c);
-        if (cmd != CMD_NONE) return cmd;            // skip '\r', '\n', unused keys
+        if (cmd != CMD_NONE) return cmd;
     }
 
-    // keyboard fallback, so the game still works without the Arduino
+    //can play with keyboard too
     if (IsKeyPressed(KEY_UP)    || IsKeyPressed(KEY_W)) return CMD_UP;
     if (IsKeyPressed(KEY_DOWN)  || IsKeyPressed(KEY_S)) return CMD_DOWN;
     if (IsKeyPressed(KEY_LEFT)  || IsKeyPressed(KEY_A)) return CMD_LEFT;
@@ -68,6 +75,11 @@ int main(void) {
     InitWindow(800, 600, "Sokoban Studio");
     SetTargetFPS(60);
 
+    char save_path[512];
+    build_save_path(save_path, sizeof(save_path));
+    SetWindowTitle(TextFormat("Sokoban Studio - save file: %s", save_path));
+    bool save_ok = true;                    // false if the last save attempt failed
+
     char port[32];
     read_port_name(port, sizeof(port));
     bool arduino = serial_open(port, BAUD_RATE);
@@ -76,7 +88,7 @@ int main(void) {
     stack_init(&undo);
     stack_init(&redo);
 
-    int unlocked = save_load(NUM_LEVELS);   // highest level the player may play
+    int unlocked = save_load(save_path, NUM_LEVELS);   // highest level the player may play
     int current = unlocked;                 // resume where the player left off
     Level lv;
     bool loaded = load_level(&lv, current, &undo, &redo);
@@ -137,7 +149,9 @@ int main(void) {
         // winning unlocks the next level and saves immediately
         if (won && current + 1 < NUM_LEVELS && unlocked < current + 1) {
             unlocked = current + 1;
-            save_write(unlocked);
+            save_ok = save_write(save_path, unlocked);
+        } else if (!save_ok) {
+            save_ok = save_write(save_path, unlocked);   // try again if it failed before
         }
 
         BeginDrawing();
@@ -160,6 +174,12 @@ int main(void) {
             DrawText("Keypad: 2 up  8 down  4 left  6 right", 40, 480, 18, GRAY);
             DrawText("A undo  B redo  C restart  # confirm  7 prev  9 next",
                      40, 502, 18, GRAY);
+            if (save_ok)
+                DrawText(TextFormat("Unlocked: %d of %d levels (auto-saved)",
+                         unlocked + 1, NUM_LEVELS), 40, 520, 18, GRAY);
+            else
+                DrawText("SAVE FAILED - file path is in the window title",
+                         40, 520, 18, RED);
             DrawText(TextFormat("Undo steps: %d   Redo steps: %d", undo.top, redo.top),
                      40, 540, 20, GRAY);
 

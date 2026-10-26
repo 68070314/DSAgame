@@ -55,7 +55,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "DSAgame::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-DSAgame-Debug-bef8d273a80f37127f68.json",
+					"jsonFile" : "target-DSAgame-Debug-69590c5bf603878f29b7.json",
 					"name" : "DSAgame",
 					"projectIndex" : 0
 				}
@@ -66,7 +66,7 @@
 	"paths" : 
 	{
 		"build" : "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/build",
-		"source" : "D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2"
+		"source" : "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder"
 	},
 	"version" : 
 	{

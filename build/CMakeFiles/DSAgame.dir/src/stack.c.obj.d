@@ -1,8 +1,8 @@
 CMakeFiles/DSAgame.dir/src/stack.c.obj: \
- D:\IT\ KMITL\ WORK\C\ CODING\DSAgame_prebuilt\DSAgame2\src\stack.c \
- D:/IT\ KMITL\ WORK/C\ CODING/DSAgame_prebuilt/DSAgame2/include/stack.h \
+ D:\IT\ KMITL\ WORK\C\ CODING\ProjectWork\DSAgame\DSAgameFolder\src\stack.c \
+ D:/IT\ KMITL\ WORK/C\ CODING/ProjectWork/DSAgame/DSAgameFolder/include/stack.h \
  C:/msys64/ucrt64/lib/gcc/x86_64-w64-mingw32/16.1.0/include/stdbool.h \
- D:/IT\ KMITL\ WORK/C\ CODING/DSAgame_prebuilt/DSAgame2/include/level.h \
+ D:/IT\ KMITL\ WORK/C\ CODING/ProjectWork/DSAgame/DSAgameFolder/include/level.h \
  C:/msys64/ucrt64/include/stdlib.h C:/msys64/ucrt64/include/corecrt.h \
  C:/msys64/ucrt64/include/_mingw.h C:/msys64/ucrt64/include/_mingw_mac.h \
  C:/msys64/ucrt64/include/_mingw_secapi.h \

@@ -56,7 +56,7 @@ RM = "C:\Program Files\CMake\bin\cmake.exe" -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "D:\IT KMITL WORK\C CODING\DSAgame_prebuilt\DSAgame2"
+CMAKE_SOURCE_DIR = "D:\IT KMITL WORK\C CODING\ProjectWork\DSAgame\DSAgameFolder"
 
 # The top-level build directory on which CMake was run.
 CMAKE_BINARY_DIR = "D:\IT KMITL WORK\C CODING\ProjectWork\DSAgame\build"
@@ -153,6 +153,30 @@ src/game.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/game.c.s
 .PHONY : src/game.c.s
 
+src/input.obj: src/input.c.obj
+.PHONY : src/input.obj
+
+# target to build an object file
+src/input.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/input.c.obj
+.PHONY : src/input.c.obj
+
+src/input.i: src/input.c.i
+.PHONY : src/input.i
+
+# target to preprocess a source file
+src/input.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/input.c.i
+.PHONY : src/input.c.i
+
+src/input.s: src/input.c.s
+.PHONY : src/input.s
+
+# target to generate assembly for a file
+src/input.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/input.c.s
+.PHONY : src/input.c.s
+
 src/level.obj: src/level.c.obj
 .PHONY : src/level.obj
 
@@ -200,6 +224,54 @@ src/main.s: src/main.c.s
 src/main.c.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/main.c.s
 .PHONY : src/main.c.s
+
+src/save.obj: src/save.c.obj
+.PHONY : src/save.obj
+
+# target to build an object file
+src/save.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/save.c.obj
+.PHONY : src/save.c.obj
+
+src/save.i: src/save.c.i
+.PHONY : src/save.i
+
+# target to preprocess a source file
+src/save.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/save.c.i
+.PHONY : src/save.c.i
+
+src/save.s: src/save.c.s
+.PHONY : src/save.s
+
+# target to generate assembly for a file
+src/save.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/save.c.s
+.PHONY : src/save.c.s
+
+src/serial.obj: src/serial.c.obj
+.PHONY : src/serial.obj
+
+# target to build an object file
+src/serial.c.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/serial.c.obj
+.PHONY : src/serial.c.obj
+
+src/serial.i: src/serial.c.i
+.PHONY : src/serial.i
+
+# target to preprocess a source file
+src/serial.c.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/serial.c.i
+.PHONY : src/serial.c.i
+
+src/serial.s: src/serial.c.s
+.PHONY : src/serial.s
+
+# target to generate assembly for a file
+src/serial.c.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\DSAgame.dir\build.make CMakeFiles/DSAgame.dir/src/serial.c.s
+.PHONY : src/serial.c.s
 
 src/stack.obj: src/stack.c.obj
 .PHONY : src/stack.obj
@@ -261,12 +333,21 @@ help:
 	@echo ... src/game.obj
 	@echo ... src/game.i
 	@echo ... src/game.s
+	@echo ... src/input.obj
+	@echo ... src/input.i
+	@echo ... src/input.s
 	@echo ... src/level.obj
 	@echo ... src/level.i
 	@echo ... src/level.s
 	@echo ... src/main.obj
 	@echo ... src/main.i
 	@echo ... src/main.s
+	@echo ... src/save.obj
+	@echo ... src/save.i
+	@echo ... src/save.s
+	@echo ... src/serial.obj
+	@echo ... src/serial.i
+	@echo ... src/serial.s
 	@echo ... src/stack.obj
 	@echo ... src/stack.i
 	@echo ... src/stack.s

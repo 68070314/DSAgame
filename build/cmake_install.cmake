@@ -1,4 +1,4 @@
-# Install script for directory: D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2
+# Install script for directory: D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

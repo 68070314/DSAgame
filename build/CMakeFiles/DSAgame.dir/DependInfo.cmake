@@ -8,11 +8,14 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
-  "D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2/src/game.c" "CMakeFiles/DSAgame.dir/src/game.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/game.c.obj.d"
-  "D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2/src/level.c" "CMakeFiles/DSAgame.dir/src/level.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/level.c.obj.d"
-  "D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2/src/main.c" "CMakeFiles/DSAgame.dir/src/main.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/main.c.obj.d"
-  "D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2/src/stack.c" "CMakeFiles/DSAgame.dir/src/stack.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/stack.c.obj.d"
-  "D:/IT KMITL WORK/C CODING/DSAgame_prebuilt/DSAgame2/src/ui.c" "CMakeFiles/DSAgame.dir/src/ui.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/ui.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/game.c" "CMakeFiles/DSAgame.dir/src/game.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/game.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/input.c" "CMakeFiles/DSAgame.dir/src/input.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/input.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/level.c" "CMakeFiles/DSAgame.dir/src/level.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/level.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/main.c" "CMakeFiles/DSAgame.dir/src/main.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/main.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/save.c" "CMakeFiles/DSAgame.dir/src/save.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/save.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/serial.c" "CMakeFiles/DSAgame.dir/src/serial.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/serial.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/stack.c" "CMakeFiles/DSAgame.dir/src/stack.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/stack.c.obj.d"
+  "D:/IT KMITL WORK/C CODING/ProjectWork/DSAgame/DSAgameFolder/src/ui.c" "CMakeFiles/DSAgame.dir/src/ui.c.obj" "gcc" "CMakeFiles/DSAgame.dir/src/ui.c.obj.d"
   )
 
 # Targets to which this target links which contain Fortran sources.

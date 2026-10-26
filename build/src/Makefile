@@ -56,7 +56,7 @@ RM = "C:\Program Files\CMake\bin\cmake.exe" -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "D:\IT KMITL WORK\C CODING\DSAgame_prebuilt\DSAgame2"
+CMAKE_SOURCE_DIR = "D:\IT KMITL WORK\C CODING\ProjectWork\DSAgame\DSAgameFolder"
 
 # The top-level build directory on which CMake was run.
 CMAKE_BINARY_DIR = "D:\IT KMITL WORK\C CODING\ProjectWork\DSAgame\build"
