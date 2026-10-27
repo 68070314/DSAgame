@@ -1,14 +1,12 @@
 #include "input.h"
 
-// Keypad layout (4x4 membrane keypad):
+// CONTROL Reference
 //
-//      1   [2 up]     3    [A undo]
-//   [4 left] 5   [6 right] [B redo]
-//   [7 prev] [8 down] [9 next] [C restart]
-//      *    0   [# confirm]   D
+//   1        [2 up]   3               [A undo]
+//   [4 left] 5        [6 right]       [B redo]
+//   [7 prev] [8 down] [9 next]        [C restart]
+//      *     0        [# confirm]     D
 //
-// Changing the layout only means editing this table. The Arduino just sends the
-// raw key, so it never needs to be reflashed.
 Command input_from_key(int c) {
     switch (c) {
         case '2': return CMD_UP;
