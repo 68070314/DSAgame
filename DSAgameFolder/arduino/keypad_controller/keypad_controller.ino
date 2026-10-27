@@ -31,9 +31,9 @@ void loop() {
 
     for (int c = 0; c < COLS; c++) {
       if (digitalRead(colPins[c]) == LOW) {
-        delay(50); 
+        delay(50);
         while (digitalRead(colPins[c]) == LOW);
-        
+        delay(20);
         Serial.write(keys[r][c]);
       }
     }

@@ -6,24 +6,59 @@
 #include "save.h"
 #include "input.h"
 #include "serial.h"
+#include "menu.h"
+#include "editor.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#define NUM_LEVELS 3
 #define BAUD_RATE 9600          // must match Serial.begin() in the Arduino sketch
 
-static const char *LEVEL_PATHS[NUM_LEVELS] = {
-    "levels/level01.txt",
-    "levels/level02.txt",
-    "levels/level03.txt",
-};
+// Which screen the game is showing
+typedef enum {
+    SCREEN_MENU,
+    SCREEN_LEVELS,          // level select (player)
+    SCREEN_PLAY,
+    SCREEN_CONFIRM_NEW,     // "erase progress?" question
+    SCREEN_EDIT_SELECT,     // level table of the editor
+    SCREEN_EDIT             // editing one level
+} Screen;
+
+// Save data lives here so every helper can reach it
+static SaveData g_save;                 // unlocked level + last played level
+static char g_save_path[512];
+static bool g_save_ok = true;           // false if the last save attempt failed
+
+static void persist(void) {
+    g_save_ok = save_write(g_save_path, &g_save);
+}
+
+// "Continue" is only available once the player has made some progress
+static bool has_progress(void) {
+    return g_save.unlocked > 0 || g_save.last > 0;
+}
 
 // Loads a level and forgets the old undo/redo history
 static bool load_level(Level *lv, int index, Stack *undo, Stack *redo) {
+    char path[64];
     stack_clear(undo);
     stack_clear(redo);
-    return level_load(lv, LEVEL_PATHS[index]);
+    level_path(index, path, sizeof(path));
+    return level_load(lv, path);
+}
+
+// Opens a level from the level select (or prev/next): remembers it as the
+// last played level in the save file, then loads it.
+static bool start_level(Level *lv, int index, Stack *undo, Stack *redo) {
+    g_save.last = index;
+    persist();
+    return load_level(lv, index, undo, redo);
+}
+
+// Wipes the progress and starts level 1
+static bool new_game(Level *lv, Stack *undo, Stack *redo) {
+    g_save.unlocked = 0;
+    return start_level(lv, 0, undo, redo);      // also resets "last" and saves
 }
 
 // Reads the port name (for example COM5) from port.txt next to the exe.
@@ -35,8 +70,9 @@ static void read_port_name(char *out, size_t size) {
 
     char buf[32];
     if (fgets(buf, sizeof(buf), f)) {
-        buf[strcspn(buf, " \t\r\n")] = '\0';        // trim at first whitespace
-        if (buf[0] != '\0') snprintf(out, size, "%s", buf);
+        char *p = buf + strspn(buf, " \t");         // skip leading spaces/tabs
+        p[strcspn(p, " \t\r\n")] = '\0';            // trim at first whitespace
+        if (p[0] != '\0') snprintf(out, size, "%s", p);
     }
     fclose(f);
 }
@@ -50,11 +86,27 @@ static void build_save_path(char *out, size_t size) {
     snprintf(out, size, "%s%ssave.txt", dir, sep);
 }
 
-static Command poll_command(void) {
+// The editor uses a different keypad layout, so poll_command needs to know
+// which screen is showing.
+static Command poll_command(Screen screen) {
     int c;
     while ((c = serial_read_key()) != -1) {
-        Command cmd = input_from_key(c);
+        Command cmd = (screen == SCREEN_EDIT) ? input_from_key_editor(c)
+                                              : input_from_key(c);
         if (cmd != CMD_NONE) return cmd;
+    }
+
+    if (screen == SCREEN_EDIT) {
+        if (IsKeyPressed(KEY_ONE)   || IsKeyPressed(KEY_KP_1)) return CMD_WALL;
+        if (IsKeyPressed(KEY_THREE) || IsKeyPressed(KEY_KP_3)) return CMD_BOX;
+        if (IsKeyPressed(KEY_FIVE)  || IsKeyPressed(KEY_KP_5)) return CMD_GOAL;
+        if (IsKeyPressed(KEY_SEVEN) || IsKeyPressed(KEY_KP_7)) return CMD_START;
+        if (IsKeyPressed(KEY_NINE)  || IsKeyPressed(KEY_KP_9)) return CMD_ERASE;
+        if (IsKeyPressed(KEY_Z)) return CMD_NARROWER;
+        if (IsKeyPressed(KEY_X)) return CMD_WIDER;
+        if (IsKeyPressed(KEY_C)) return CMD_SHORTER;
+        if (IsKeyPressed(KEY_V)) return CMD_TALLER;
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER)) return CMD_SAVE;
     }
 
     //can play with keyboard too
@@ -62,23 +114,24 @@ static Command poll_command(void) {
     if (IsKeyPressed(KEY_DOWN)  || IsKeyPressed(KEY_S)) return CMD_DOWN;
     if (IsKeyPressed(KEY_LEFT)  || IsKeyPressed(KEY_A)) return CMD_LEFT;
     if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) return CMD_RIGHT;
-    if (IsKeyPressed(KEY_U))     return CMD_UNDO;
-    if (IsKeyPressed(KEY_Y))     return CMD_REDO;
-    if (IsKeyPressed(KEY_R))     return CMD_RESTART;
-    if (IsKeyPressed(KEY_ENTER)) return CMD_CONFIRM;
-    if (IsKeyPressed(KEY_P))     return CMD_PREV;
-    if (IsKeyPressed(KEY_N))     return CMD_NEXT;
+    if (IsKeyPressed(KEY_U))      return CMD_UNDO;
+    if (IsKeyPressed(KEY_Y))      return CMD_REDO;
+    if (IsKeyPressed(KEY_R))      return CMD_RESTART;
+    if (IsKeyPressed(KEY_ENTER))  return CMD_CONFIRM;
+    if (IsKeyPressed(KEY_P))      return CMD_PREV;
+    if (IsKeyPressed(KEY_N))      return CMD_NEXT;
+    if (IsKeyPressed(KEY_L))      return CMD_LEVELS;
+    if (IsKeyPressed(KEY_ESCAPE)) return CMD_BACK;
     return CMD_NONE;
 }
 
 int main(void) {
     InitWindow(800, 600, "Sokoban Studio");
+    SetExitKey(KEY_NULL);               // Esc means "back" now, it must not close the window
     SetTargetFPS(60);
 
-    char save_path[512];
-    build_save_path(save_path, sizeof(save_path));
-    SetWindowTitle(TextFormat("Sokoban Studio - save file: %s", save_path));
-    bool save_ok = true;                    // false if the last save attempt failed
+    build_save_path(g_save_path, sizeof(g_save_path));
+    SetWindowTitle(TextFormat("Sokoban Studio - save file: %s", g_save_path));
 
     char port[32];
     read_port_name(port, sizeof(port));
@@ -88,109 +141,198 @@ int main(void) {
     stack_init(&undo);
     stack_init(&redo);
 
-    int unlocked = save_load(save_path, NUM_LEVELS);   // highest level the player may play
-    int current = unlocked;                 // resume where the player left off
+    int num_levels = level_count();     // how many levelNN.txt files exist
+    g_save = save_load(g_save_path, num_levels > 0 ? num_levels : 1);
+    int current = g_save.last;          // level being played (or last played)
     Level lv;
-    bool loaded = load_level(&lv, current, &undo, &redo);
+    bool loaded = false;                // becomes true once the player picks a level
+    Editor ed;                          // filled in when the editor opens a level
 
-    while (!WindowShouldClose()) {
-        Command cmd = poll_command();
-        bool won = loaded && game_is_won(&lv);
+    Screen screen = SCREEN_MENU;
+    bool quit = false;
 
-        if (loaded) {
-            // movement is locked once the level is solved
-            if (!won) {
-                int dx = 0, dy = 0;
-                if (cmd == CMD_UP)    dy = -1;
-                if (cmd == CMD_DOWN)  dy = 1;
-                if (cmd == CMD_LEFT)  dx = -1;
-                if (cmd == CMD_RIGHT) dx = 1;
+    while (!quit && !WindowShouldClose()) {
+        Command cmd = poll_command(screen);
+        bool won = false;
+        bool go_levels = false;         // set by key or button, handled after drawing
 
-                if (dx != 0 || dy != 0) {
-                    Level before = lv;
-                    if (game_move(&lv, dx, dy)) {
-                        stack_push(&undo, &before);
-                        stack_clear(&redo);
+        // ---------- update the level being played ----------
+        if (screen == SCREEN_PLAY) {
+            if (cmd == CMD_LEVELS || cmd == CMD_BACK) go_levels = true;
+
+            if (loaded) {
+                won = game_is_won(&lv);
+
+                // movement is locked once the level is solved
+                if (!won) {
+                    int dx = 0, dy = 0;
+                    if (cmd == CMD_UP)    dy = -1;
+                    if (cmd == CMD_DOWN)  dy = 1;
+                    if (cmd == CMD_LEFT)  dx = -1;
+                    if (cmd == CMD_RIGHT) dx = 1;
+
+                    if (dx != 0 || dy != 0) {
+                        Level before = lv;
+                        if (game_move(&lv, dx, dy)) {
+                            stack_push(&undo, &before);
+                            stack_clear(&redo);
+                        }
                     }
+                }
+
+                // undo / redo still work after a win
+                if (cmd == CMD_UNDO) {
+                    Level prev;
+                    if (stack_pop(&undo, &prev)) { stack_push(&redo, &lv); lv = prev; }
+                }
+                if (cmd == CMD_REDO) {
+                    Level next;
+                    if (stack_pop(&redo, &next)) { stack_push(&undo, &lv); lv = next; }
+                }
+                if (cmd == CMD_RESTART)
+                    loaded = load_level(&lv, current, &undo, &redo);
+
+                // next level after a win
+                if (won && cmd == CMD_CONFIRM && current + 1 < num_levels) {
+                    current++;
+                    loaded = start_level(&lv, current, &undo, &redo);
+                }
+
+                // replay an earlier level, or go forward to one already unlocked
+                if (cmd == CMD_PREV && current > 0) {
+                    current--;
+                    loaded = start_level(&lv, current, &undo, &redo);
+                }
+                if (cmd == CMD_NEXT && current < g_save.unlocked) {
+                    current++;
+                    loaded = start_level(&lv, current, &undo, &redo);
                 }
             }
 
-            // undo / redo still work after a win
-            if (cmd == CMD_UNDO) {
-                Level prev;
-                if (stack_pop(&undo, &prev)) { stack_push(&redo, &lv); lv = prev; }
-            }
-            if (cmd == CMD_REDO) {
-                Level next;
-                if (stack_pop(&redo, &next)) { stack_push(&undo, &lv); lv = next; }
-            }
-            if (cmd == CMD_RESTART)
-                loaded = load_level(&lv, current, &undo, &redo);
-
-            // next level after a win
-            if (won && cmd == CMD_CONFIRM && current + 1 < NUM_LEVELS) {
-                current++;
-                loaded = load_level(&lv, current, &undo, &redo);
-            }
-
-            // replay an earlier level, or go forward to one already unlocked
-            if (cmd == CMD_PREV && current > 0) {
-                current--;
-                loaded = load_level(&lv, current, &undo, &redo);
-            }
-            if (cmd == CMD_NEXT && current < unlocked) {
-                current++;
-                loaded = load_level(&lv, current, &undo, &redo);
-            }
+            won = loaded && game_is_won(&lv);   // recompute after input
         }
-
-        won = loaded && game_is_won(&lv);   // recompute after input
 
         // winning unlocks the next level and saves immediately
-        if (won && current + 1 < NUM_LEVELS && unlocked < current + 1) {
-            unlocked = current + 1;
-            save_ok = save_write(save_path, unlocked);
-        } else if (!save_ok) {
-            save_ok = save_write(save_path, unlocked);   // try again if it failed before
+        if (won && current + 1 < num_levels && g_save.unlocked < current + 1) {
+            g_save.unlocked = current + 1;
+            persist();
+        } else if (!g_save_ok) {
+            persist();                          // try again if it failed before
         }
 
+        // ---------- draw (the menus and the editor also handle their own input here) ----------
         BeginDrawing();
         ClearBackground(RAYWHITE);
-        if (!loaded) {
-            DrawText(TextFormat("Could not load %s", LEVEL_PATHS[current]),
-                     40, 40, 24, RED);
-        } else {
-            ui_draw(&lv);
-            DrawText(TextFormat("Level %d/%d", current + 1, NUM_LEVELS),
-                     300, 8, 24, DARKGRAY);
 
-            if (arduino)
-                DrawText(TextFormat("Arduino: %s connected", port),
-                         500, 12, 18, DARKGREEN);
-            else
-                DrawText(TextFormat("Arduino: %s not found (keyboard mode)", port),
-                         440, 12, 18, ORANGE);
-
-            DrawText("Keypad: 2 up  8 down  4 left  6 right", 40, 480, 18, GRAY);
-            DrawText("A undo  B redo  C restart  # confirm  7 prev  9 next",
-                     40, 502, 18, GRAY);
-            if (save_ok)
-                DrawText(TextFormat("Unlocked: %d of %d levels (auto-saved)",
-                         unlocked + 1, NUM_LEVELS), 40, 520, 18, GRAY);
-            else
-                DrawText("SAVE FAILED - file path is in the window title",
-                         40, 520, 18, RED);
-            DrawText(TextFormat("Undo steps: %d   Redo steps: %d", undo.top, redo.top),
-                     40, 540, 20, GRAY);
-
-            if (won) {
-                const char *msg = (current + 1 < NUM_LEVELS)
-                    ? "You win! Press # (or Enter) for the next level"
-                    : "You win! All levels complete";
-                DrawText(msg, 40, 565, 28, DARKGREEN);
+        if (screen == SCREEN_MENU) {
+            MenuAction action = menu_main(cmd, has_progress());
+            if (action == MENU_CONTINUE) {
+                menu_level_select_reset(g_save.last);
+                screen = SCREEN_LEVELS;
             }
+            if (action == MENU_NEW_GAME) {
+                if (has_progress()) {
+                    screen = SCREEN_CONFIRM_NEW;        // ask before erasing anything
+                } else {
+                    current = 0;
+                    loaded = new_game(&lv, &undo, &redo);
+                    screen = SCREEN_PLAY;
+                }
+            }
+            if (action == MENU_EDITOR) {
+                menu_level_select_reset(0);
+                screen = SCREEN_EDIT_SELECT;
+            }
+            if (action == MENU_QUIT) quit = true;
+
+        } else if (screen == SCREEN_CONFIRM_NEW) {
+            int answer = menu_confirm(cmd, "Start over? Your saved progress will be erased.");
+            if (answer == 1) {
+                current = 0;
+                loaded = new_game(&lv, &undo, &redo);
+                screen = SCREEN_PLAY;
+            } else if (answer == 0) {
+                screen = SCREEN_MENU;
+            }
+
+        } else if (screen == SCREEN_LEVELS) {
+            int pick = menu_level_select(cmd, "Select Level", num_levels,
+                                         g_save.unlocked, false);
+            if (pick == LEVELSEL_BACK) {
+                screen = SCREEN_MENU;
+            } else if (pick >= 0) {
+                current = pick;
+                loaded = start_level(&lv, current, &undo, &redo);
+                screen = SCREEN_PLAY;
+            }
+
+        } else if (screen == SCREEN_EDIT_SELECT) {
+            // every level can be edited, and "+" adds a new one (up to MAX_LEVELS)
+            int pick = menu_level_select(cmd, "Level Editor", num_levels,
+                                         num_levels - 1, num_levels < MAX_LEVELS);
+            if (pick == LEVELSEL_BACK) {
+                screen = SCREEN_MENU;
+            } else if (pick == LEVELSEL_ADD) {
+                editor_new(&ed, num_levels);
+                screen = SCREEN_EDIT;
+            } else if (pick >= 0) {
+                editor_edit(&ed, pick);
+                screen = SCREEN_EDIT;
+            }
+
+        } else if (screen == SCREEN_EDIT) {
+            if (editor_run(&ed, cmd) == EDITOR_EXIT) {
+                num_levels = level_count();             // the editor may have added a level
+                menu_level_select_reset(ed.index);
+                screen = SCREEN_EDIT_SELECT;
+            }
+
+        } else {    // SCREEN_PLAY
+            if (!loaded) {
+                char path[64];
+                level_path(current, path, sizeof(path));
+                DrawText(TextFormat("Could not load %s", path), 40, 60, 24, RED);
+            } else {
+                ui_draw(&lv);
+                DrawText(TextFormat("Level %d/%d", current + 1, num_levels),
+                         300, 8, 24, DARKGRAY);
+
+                if (arduino)
+                    DrawText(TextFormat("Arduino: %s connected", port),
+                             500, 12, 18, DARKGREEN);
+                else
+                    DrawText(TextFormat("Arduino: %s not found (keyboard mode)", port),
+                             440, 12, 18, ORANGE);
+
+                DrawText("Keypad: 2 up  8 down  4 left  6 right", 40, 480, 18, GRAY);
+                DrawText("A undo  B redo  C restart  # confirm  7 prev  9 next  * levels",
+                         40, 502, 18, GRAY);
+                if (g_save_ok)
+                    DrawText(TextFormat("Unlocked: %d of %d levels (auto-saved)",
+                             g_save.unlocked + 1, num_levels), 40, 520, 18, GRAY);
+                else
+                    DrawText("SAVE FAILED - file path is in the window title",
+                             40, 520, 18, RED);
+                DrawText(TextFormat("Undo steps: %d   Redo steps: %d", undo.top, redo.top),
+                         40, 540, 20, GRAY);
+
+                if (won) {
+                    const char *msg = (current + 1 < num_levels)
+                        ? "You win! Press # (or Enter) for the next level"
+                        : "You win! All levels complete";
+                    DrawText(msg, 40, 565, 28, DARKGREEN);
+                }
+            }
+
+            if (menu_levels_button()) go_levels = true;
         }
+
         EndDrawing();
+
+        if (go_levels) {
+            menu_level_select_reset(g_save.last);
+            screen = SCREEN_LEVELS;
+        }
     }
 
     serial_close();

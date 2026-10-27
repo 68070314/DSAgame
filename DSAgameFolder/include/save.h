@@ -2,11 +2,17 @@
 #define SAVE_H
 #include <stdbool.h>
 
-// Reads the highest unlocked level index (0-based) from save.txt.
-// Returns 0 if there is no save file or it is unreadable.
-int save_load(const char *path, int num_levels);
+typedef struct {
+    int unlocked;   // highest level index (0-based) the player may play
+    int last;       // level index (0-based) the player opened most recently
+} SaveData;
 
-// Writes the highest unlocked level index to save.txt. Returns false on failure.
-bool save_write(const char *path, int unlocked);
+// Reads save.txt. A missing or unreadable file gives {0, 0}.
+// Old save files that hold only the unlocked level still load fine.
+// Values are clamped to 0..num_levels-1, and last is never above unlocked.
+SaveData save_load(const char *path, int num_levels);
+
+// Writes the save data to save.txt. Returns false on failure.
+bool save_write(const char *path, const SaveData *data);
 
 #endif

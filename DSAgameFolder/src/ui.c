@@ -6,6 +6,34 @@
 #define AREA_TOP 50
 #define AREA_BOTTOM 470
 
+void ui_draw_grid(const Level *lv, int ox, int oy, int tile) {
+    int inset = tile / 8;                       // box margin inside its cell
+    int goal_r = tile / 8 < 3 ? 3 : tile / 8;   // goal dot radius
+
+    for (int y = 0; y < lv->height; y++) {
+        for (int x = 0; x < lv->width; x++) {
+            char c = lv->grid[y][x];
+            int px = ox + x * tile;
+            int py = oy + y * tile;
+
+            if (c == '#') {
+                DrawRectangle(px, py, tile, tile, DARKGRAY);
+                continue;
+            }
+            DrawRectangle(px, py, tile, tile, LIGHTGRAY);        // floor
+            DrawRectangleLines(px, py, tile, tile, GRAY);
+
+            if (c == '.' || c == '*' || c == '+')                // goal marker
+                DrawCircle(px + tile / 2, py + tile / 2, goal_r, RED);
+            if (c == '$' || c == '*')                            // box
+                DrawRectangle(px + inset, py + inset, tile - 2 * inset, tile - 2 * inset,
+                              c == '*' ? GREEN : BROWN);
+            if (c == '@' || c == '+')                            // player
+                DrawCircle(px + tile / 2, py + tile / 2, tile / 3, BLUE);
+        }
+    }
+}
+
 void ui_draw(const Level *lv) {
     int map_w = lv->width * TILE;
     int map_h = lv->height * TILE;
@@ -15,30 +43,25 @@ void ui_draw(const Level *lv) {
     if (ox < 0) ox = 0;
     if (oy < AREA_TOP) oy = AREA_TOP;
 
-    for (int y = 0; y < lv->height; y++) {
-        for (int x = 0; x < lv->width; x++) {
-            char c = lv->grid[y][x];
-            int px = ox + x * TILE;
-            int py = oy + y * TILE;
-
-            if (c == '#') {
-                DrawRectangle(px, py, TILE, TILE, DARKGRAY);
-                continue;
-            }
-            DrawRectangle(px, py, TILE, TILE, LIGHTGRAY);        // floor
-            DrawRectangleLines(px, py, TILE, TILE, GRAY);
-
-            if (c == '.' || c == '*' || c == '+')                // goal marker
-                DrawCircle(px + TILE / 2, py + TILE / 2, 6, RED);
-            if (c == '$' || c == '*')                            // box
-                DrawRectangle(px + 6, py + 6, TILE - 12, TILE - 12,
-                              c == '*' ? GREEN : BROWN);
-            if (c == '@' || c == '+')                            // player
-                DrawCircle(px + TILE / 2, py + TILE / 2, TILE / 3, BLUE);
-        }
-    }
+    ui_draw_grid(lv, ox, oy, TILE);
 
     // move counter above the map, hint below it, both lined up with the map
     DrawText(TextFormat("Moves: %d", lv->moves), ox, oy - 30, 24, DARKGRAY);
     DrawText("Arrows/WASD: move   R: restart", ox, oy + map_h + 12, 20, GRAY);
+}
+
+bool ui_button(int x, int y, int w, int h, const char *label, bool focused, bool enabled) {
+    Rectangle r = { (float)x, (float)y, (float)w, (float)h };
+    bool hover = CheckCollisionPointRec(GetMousePosition(), r);
+
+    Color fill = !enabled ? LIGHTGRAY : (focused ? SKYBLUE : (Color){235, 235, 235, 255});
+    DrawRectangleRec(r, fill);
+    DrawRectangleLinesEx(r, 2, (focused && enabled) ? BLUE : GRAY);
+
+    int size = h * 5 / 9;                       // text size follows the button height
+    if (size > 24) size = 24;
+    int tw = MeasureText(label, size);
+    DrawText(label, x + (w - tw) / 2, y + (h - size) / 2, size, enabled ? DARKGRAY : GRAY);
+
+    return enabled && hover && IsMouseButtonPressed(MOUSE_BUTTON_LEFT);
 }

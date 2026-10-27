@@ -29,3 +29,34 @@ bool level_load(Level *lv, const char *path) {
     fclose(f);
     return lv->height > 0 && lv->player_x >= 0;    // must have a player
 }
+
+bool level_save(const Level *lv, const char *path) {
+    FILE *f = fopen(path, "w");
+    if (!f) return false;
+
+    bool ok = true;
+    for (int y = 0; y < lv->height; y++) {
+        // every row is written at full width so the map keeps its size
+        if (fwrite(lv->grid[y], 1, (size_t)lv->width, f) != (size_t)lv->width) ok = false;
+        if (fputc('\n', f) == EOF) ok = false;
+    }
+    if (fclose(f) != 0) ok = false;                // fclose flushes the data to disk
+    return ok;
+}
+
+void level_path(int index, char *out, size_t size) {
+    snprintf(out, size, "levels/level%02d.txt", index + 1);
+}
+
+int level_count(void) {
+    int n = 0;
+    char path[64];
+    while (n < MAX_LEVELS) {
+        level_path(n, path, sizeof(path));
+        FILE *f = fopen(path, "r");
+        if (!f) break;
+        fclose(f);
+        n++;
+    }
+    return n;
+}
